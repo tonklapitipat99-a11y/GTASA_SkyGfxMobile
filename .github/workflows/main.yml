@@ -17,7 +17,7 @@ jobs:
         submodules: recursive
         
     - name: Setup SSH keys...
-      uses: webfactory/ssh-agent@v0.8.0
+      uses: webfactory/tonklapitipat99-a11y
       with:
         ssh-private-key: |
           ${{ secrets.SSH }}
