@@ -1,31 +1,58 @@
-name: Build C++ Mod
+name: AML Mod Compiler
 
 on:
   push:
-    branches: [ "main", "master" ]
-  workflow_dispatch: # บรรทัดนี้แหละครับที่จะสร้างปุ่ม "Run workflow" ให้เรากด!
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
+
+    - name: Checkout repository...
       uses: actions/checkout@v4
       with:
         submodules: recursive
+        
+    - name: Setup SSH keys...
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: |
+          ${{ secrets.SSH }}
 
-    - name: Install Android NDK
+    - name: Download AndroidModLoader`s mod template...
+      uses: wei/wget@v1
+      with:
+        args: -O ./AML_src.zip https://github.com/RusJJ/AndroidModLoader/archive/refs/heads/main.zip
+
+    - name: Install AndroidModLoader`s mod template...
+      run: |
+        unzip ./AML_src.zip
+        mv ./AndroidModLoader-main/mod ./mod
+
+    - name: Get SAUtils...
+      uses: wei/wget@v1
+      with:
+        args: -O ./isautils.h https://github.com/AndroidModLoader/SAUtils/raw/main/isautils.h
+          
+    - name: Get GTA:SA structures file (private)...
+      run: |
+        git clone ssh://git@github.com/RusJJ/GTASAAndroid_Structs.git ./structs
+        mv ./structs/* ./
+
+    - name: Install Android NDK (r25c)...
       uses: nttld/setup-ndk@v1.2.0
       with:
-        ndk-version: r24
+        ndk-version: r25c
         local-cache: true
 
-    - name: Build the Mod (ndk-build)
-      run: |
-        ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./Android.mk NDK_APPLICATION_MK=./Application.mk
+    - name: Build the code...
+      run: ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./Android.mk NDK_APPLICATION_MK=./Application.mk NDK_DEBUG=0 -j12
 
-    - name: Upload compiled files (.so)
+    - name: Upload the mod!
       uses: actions/upload-artifact@v4
       with:
-        name: my-compiled-mod
-        path: libs/
+        name: compiled-mod.zip
+        path: ./libs
